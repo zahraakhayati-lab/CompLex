@@ -34,8 +34,11 @@ exports.getWordDetails=async(req,res) =>{
 };
 exports.getHomeWords = async (req,res) =>{
     try{
-        const words=await Word.aggregate([{$sample:{size:10}}]);
-        res.status(200).json(words);
+        const words=await Word.aggregate([{$sample:{size:1}}]);
+        if(word.length==0){
+            return res.status(404).json({message:'هیچ لغتی در دیتابیس وجود ندارد'});
+        }
+        res.status(200).json(words[0]);
     }catch(err){
         res.status(500).json({message:'خطا در سرور',error:err.message});
     }
