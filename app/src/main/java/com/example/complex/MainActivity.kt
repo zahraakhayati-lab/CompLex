@@ -12,8 +12,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.example.complex.ui.LoginScreen
 import com.example.complex.ui.SignUpScreen
+import com.example.complex.ui.WelcomeScreen
 
-private enum class Screen { Login, SignUp }
+private enum class Screen { Welcome, Login, SignUp }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,13 +22,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MaterialTheme { // اگر تم خودتان را دارید (مثلا CompLexTheme) به‌جای آن بگذارید
-                var screen by rememberSaveable { mutableStateOf(Screen.Login) }
+                var screen by rememberSaveable { mutableStateOf(Screen.Welcome) }
 
-                BackHandler(enabled = screen == Screen.SignUp) { screen = Screen.Login }
+                // دکمه‌ی Back گوشی
+                BackHandler(enabled = screen != Screen.Welcome) {
+                    screen = if (screen == Screen.SignUp) Screen.Login else Screen.Welcome
+                }
 
                 when (screen) {
+                    Screen.Welcome -> WelcomeScreen(
+                        onGetStarted = { screen = Screen.Login }
+                        // وقتی عکس‌ها را در res/drawable گذاشتید:
+                        // logo = painterResource(R.drawable.complex_logo),
+                        // illustration = painterResource(R.drawable.welcome_illustration),
+                    )
+
                     Screen.Login -> LoginScreen(
-                        onBack = { finish() },
+                        onBack = { screen = Screen.Welcome },
                         onLoginSuccess = { /* TODO: رفتن به صفحه‌ی اصلی */ },
                         onNavigateToRegister = { screen = Screen.SignUp }
                     )
