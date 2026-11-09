@@ -1,0 +1,10 @@
+const express = require('express');
+const router =express.Router();
+const wordController=require('../controllers/wordController');
+router.get('/search',wordController.searchWord);
+router.get('/home',wordController.getHomeWords);
+router.get('/:id',wordController.getWordDetails);
+router.post('/save',wordController.saveWord);
+router.get('/saved/:userId',wordController.getSavedWords);
+router.get('/dashboard/:userId',wordController.getDashboardStats);
+module.exports=router;
