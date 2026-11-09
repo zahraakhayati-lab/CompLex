@@ -185,3 +185,69 @@ exports.changePassword = async (req, res) => {
         res.status(500).json({ message: 'خطا در سرور', error: err.message });
     }
 };
+// ۷. درخواست بازیابی رمز عبور (ارسال کد به ترمینال)
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body; 
+        
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'کاربری با این ایمیل پیدا نشد' });
+        }
+
+        // ساخت یک کد ۶ رقمی تصادفی
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // ذخیره کد و زمان انقضا (۲ دقیقه بعد) در دیتابیس
+        user.resetPasswordCode = resetCode;
+        user.resetPasswordExpires = Date.now() + 2 * 60 * 1000; // ۲ دقیقه
+        await user.save();
+
+        // چاپ کد در ترمینال (به جای ارسال ایمیل)
+        console.log(`\n=================================`);
+        console.log(`🚨 کد بازیابی برای ${email}: ${resetCode} 🚨`);
+        console.log(`=================================\n`);
+
+        res.status(200).json({ message: 'کد بازیابی در ترمینال سرور چاپ شد (برای تست به ترمینال VS Code نگاه کنید)' });
+
+    } catch (err) {
+        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+    }
+};
+
+// ۸. تایید کد و تغییر رمز عبور جدید
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, code, newPassword } = req.body;
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'کاربر پیدا نشد' });
+        }
+
+        // چک کردن اینکه کد درست باشه
+        if (user.resetPasswordCode !== code) {
+            return res.status(400).json({ message: 'کد وارد شده اشتباه است' });
+        }
+
+        // چک کردن اینکه کد منقضی نشده باشه
+        if (user.resetPasswordExpires < Date.now()) {
+            return res.status(400).json({ message: 'کد شما منقضی شده است. دوباره درخواست دهید' });
+        }
+
+        // هش کردن رمز جدید و ذخیره
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+
+        // پاک کردن کدهای موقت بعد از استفاده
+        user.resetPasswordCode = null;
+        user.resetPasswordExpires = null;
+        
+        await user.save();
+
+        res.status(200).json({ message: 'رمز عبور شما با موفقیت تغییر کرد. حالا می‌توانید لاگین کنید' });
+
+    } catch (err) {
+        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+    }
+};
