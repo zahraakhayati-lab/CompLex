@@ -185,12 +185,16 @@ fun SignUpScreen(
                     }
                     if (localError == null) onCreateAccount(email.trim(), password)
                 },
-                enabled = !isLoading,
+                enabled = !isLoading && agreed,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(24.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandBlue,
+                    disabledContainerColor = BrandBlue.copy(alpha = 0.4f),
+                    disabledContentColor = Color.White
+                )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(

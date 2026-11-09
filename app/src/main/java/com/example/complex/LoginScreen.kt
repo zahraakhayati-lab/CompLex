@@ -204,12 +204,16 @@ fun LoginContent(
                         onLogin(email.trim(), password)
                     }
                 },
-                enabled = !isLoading,
+                enabled = !isLoading && agreed,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandBlue,
+                    disabledContainerColor = BrandBlue.copy(alpha = 0.4f),
+                    disabledContentColor = Color.White
+                )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(

@@ -1,5 +1,5 @@
 package com.example.complex.data.remote
 
 object ApiConfig {
-    const val BASE_URL = "https://complex-g6qn.onrender.com"
+    const val BASE_URL = "http://10.0.2.2:3000/"
 }

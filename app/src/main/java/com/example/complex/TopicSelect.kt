@@ -1,208 +1,231 @@
-package com.example.complex
+package com.example.complex.ui // پکیج خود را جایگزین کنید
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
+import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Cloud
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Lan
+import androidx.compose.material.icons.outlined.Memory
+import androidx.compose.material.icons.outlined.Psychology
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.complex.ui.theme.TextDark
-import com.example.complex.ui.theme.BorderGray
-import com.example.complex.ui.theme.TextGray
-import com.example.complex.ui.theme.CompLexBlue
 
-data class Topic(val title: String, val icon: ImageVector)
+private val BrandBlue = Color(0xFF0099FF)
+private val TitleColor = Color(0xFF111111)
+private val SubtitleColor = Color(0xFF4A6075)
+private val BorderColor = Color(0xFF4A6075)
+private val InactiveStep = Color(0xFFE6E6E6)
+
+enum class InterestTopic(val title: String, val icon: ImageVector) {
+    PROGRAMMING("Programming", Icons.Outlined.Code),
+    ALGORITHMS("Algorithms", Icons.Outlined.BarChart),
+    AI_ML("AI & Machine Learning", Icons.Outlined.Psychology),
+    DATA_STRUCTURES("Data Structures", Icons.AutoMirrored.Outlined.ShowChart),
+    NETWORKS("Computer Networks", Icons.Outlined.Lan),
+    OPERATING_SYSTEMS("Operating Systems", Icons.Outlined.Settings),
+    DATABASES("Databases", Icons.Outlined.Storage),
+    CYBERSECURITY("Cybersecurity", Icons.Outlined.Shield),
+    CLOUD("Cloud Computing", Icons.Outlined.Cloud),
+    WEB("Web Development", Icons.Outlined.Language),
+    SOFTWARE_ENGINEERING("Software Engineering", Icons.Outlined.Devices),
+    ARCHITECTURE("Computer Architecture", Icons.Outlined.Memory)
+}
 
 @Composable
-fun TopicSelectionScreen(
-    onBackClick: () -> Unit = {},
-    onContinueClick: () -> Unit = {}
+fun TopicInterestScreen(
+    onBack: () -> Unit,
+    onContinue: (List<InterestTopic>) -> Unit,
+    currentStep: Int = 3,
+    totalSteps: Int = 3
 ) {
-    // استفاده از Set برای ذخیره گزینه‌های انتخاب شده (چون مولتیپل هست و هر کدوم فقط یکبار)
-    var selectedTopics by remember { mutableStateOf(setOf<String>()) }
+    // نام انتخاب‌شده‌ها ذخیره می‌شود تا با چرخش صفحه از بین نرود
+    var selectedNames by rememberSaveable { mutableStateOf(setOf<String>()) }
 
-    val topics = listOf(
-        Topic("Programming", Icons.Outlined.Code),
-        Topic("Algorithms", Icons.Outlined.BarChart),
-        Topic("AI & Machine Learning", Icons.Outlined.Memory),
-        Topic("Data Structures", Icons.Outlined.ShowChart),
-        Topic("Computer Networks", Icons.Outlined.Share),
-        Topic("Operating Systems", Icons.Outlined.Settings),
-        Topic("Databases", Icons.Outlined.Storage),
-        Topic("Cybersecurity", Icons.Outlined.Security),
-        Topic("Cloud Computing", Icons.Outlined.Cloud),
-        Topic("Web Development", Icons.Outlined.Language),
-        Topic("Software Engineering", Icons.Outlined.DeveloperBoard),
-        Topic("Computer Architecture", Icons.Outlined.Memory) // آیکون مشابه
-    )
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 24.dp, vertical = 32.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // هدر: دکمه برگشت و نقطه‌های مرحله
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            IconButton(onClick = onBackClick, modifier = Modifier.size(24.dp)) {
+            // --- Back arrow ---
+            IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = TextDark
+                    tint = Color.Black
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // نقطه‌های نشانگر مرحله (مرحله سوم آبیه)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // --- Step indicator ---
+            TopicStepIndicator(
+                currentStep = currentStep,
+                totalSteps = totalSteps,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // --- Title ---
+            Text(
+                text = "Which topic interests you?",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TitleColor
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Choose your English level.",
+                fontSize = 14.sp,
+                color = SubtitleColor
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- Topics grid (multi-select) ---
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                Box(modifier = Modifier.size(6.dp).background(Color.LightGray, RoundedCornerShape(3.dp)))
-                Box(modifier = Modifier.size(6.dp).background(Color.LightGray, RoundedCornerShape(3.dp)))
-                Box(modifier = Modifier.width(32.dp).height(6.dp).background(CompLexBlue, RoundedCornerShape(3.dp)))
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.width(24.dp)) // برای تراز ماندن
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = "Which topic interests you?",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark,
-            lineHeight = 34.sp
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Choose your English level.", // همون متنی که تو عکس بود
-            fontSize = 16.sp,
-            color = Color(0xFF4A7A9B)
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // چیدمان دو ستونه با استفاده از Chunked
-        val rows = topics.chunked(2)
-
-        rows.forEach { rowTopics ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                rowTopics.forEach { topic ->
-                    val isSelected = selectedTopics.contains(topic.title)
-
-                    Row(
-                        modifier = Modifier
-                            .weight(1f) // تقسیم مساوی فضا بین دو ستون
-                            .padding(bottom = 12.dp)
-                            .border(
-                                width = 1.dp,
-                                color = if (isSelected) CompLexBlue else BorderGray,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .background(
-                                color = if (isSelected) CompLexBlue.copy(alpha = 0.05f) else Color.Transparent,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .clickable {
-                                selectedTopics = if (isSelected) {
-                                    selectedTopics - topic.title
-                                } else {
-                                    selectedTopics + topic.title
-                                }
+                items(InterestTopic.values().toList()) { topic ->
+                    val isSelected = topic.name in selectedNames
+                    TopicChip(
+                        topic = topic,
+                        isSelected = isSelected,
+                        onClick = {
+                            selectedNames = if (isSelected) {
+                                selectedNames - topic.name
+                            } else {
+                                selectedNames + topic.name
                             }
-                            .padding(horizontal = 12.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = topic.icon,
-                            contentDescription = topic.title,
-                            tint = if (isSelected) CompLexBlue else TextGray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = topic.title,
-                            fontSize = 13.sp,
-                            color = TextDark,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            maxLines = 1 // جلوگیری از شکستن خط در متن‌های طولانی
-                        )
-                    }
-                }
-                // اگر تعداد آیتم‌ها فرد بود، ستون خالی اضافه میکنیم تا چیدمان بهم نریزه
-                if (rowTopics.size < 2) {
-                    Spacer(modifier = Modifier.weight(1f))
+                        }
+                    )
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // دکمه ادامه
-        Button(
-            onClick = onContinueClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = CompLexBlue,
-                disabledContainerColor = CompLexBlue.copy(alpha = 0.5f)
-            ),
-            shape = RoundedCornerShape(16.dp),
-            enabled = selectedTopics.isNotEmpty() // حداقل یک موضوع باید انتخاب بشه
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+            // --- Continue (حداقل یک موضوع باید انتخاب شود) ---
+            Button(
+                onClick = {
+                    onContinue(InterestTopic.values().filter { it.name in selectedNames })
+                },
+                enabled = selectedNames.isNotEmpty(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = BrandBlue,
+                    disabledContainerColor = BrandBlue.copy(alpha = 0.4f),
+                    disabledContentColor = Color.White
+                )
             ) {
-                Text(
-                    text = "Continue",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "→",
-                    color = Color.White,
-                    fontSize = 18.sp
-                )
+                Text("Continue", fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.width(10.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
+@Composable
+private fun TopicStepIndicator(
+    currentStep: Int,
+    totalSteps: Int,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(totalSteps) { index ->
+            val isCurrent = index == currentStep - 1
+            Box(
+                modifier = Modifier
+                    .width(if (isCurrent) 40.dp else 20.dp)
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (isCurrent) BrandBlue else InactiveStep)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopicChip(
+    topic: InterestTopic,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        color = if (isSelected) BrandBlue.copy(alpha = 0.08f) else Color.White,
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) BrandBlue else BorderColor
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = topic.icon,
+                contentDescription = null,
+                tint = if (isSelected) BrandBlue else SubtitleColor,
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = topic.title,
+                fontSize = 11.sp,
+                lineHeight = 13.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = if (isSelected) BrandBlue else SubtitleColor,
+                fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
+            )
+        }
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun TopicSelectionScreenPreview() {
-    TopicSelectionScreen()
+private fun TopicInterestScreenPreview() {
+    MaterialTheme {
+        TopicInterestScreen(onBack = {}, onContinue = {})
+    }
 }
