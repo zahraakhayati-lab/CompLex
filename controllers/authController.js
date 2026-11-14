@@ -46,13 +46,11 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'ایمیل یا رمز عبور اشتباه است' });
         }
 
-        // ====== محاسبه استریک (اصلاح شده) ======
         const today = new Date();
         today.setHours(0, 0, 0, 0); // صفر کردن ساعت برای مقایسه دقیق روزها
 
         let currentStreak = user.streak || 0;
         
-        // اصلاح شد: استفاده از Date به جای DataTransfer
         let lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
 
         if (lastLogin) {
@@ -119,8 +117,7 @@ exports.updateProfile = async (req, res) => {
         if (!updatedUser) {
             return res.status(404).json({ message: 'کاربر پیدا نشد' });
         }
-        
-        // اصلاح شد: updatedUser
+      
         res.status(200).json({ message: 'پروفایل با موفقیت آپدیت شد', user: updatedUser });
     } catch (err) {
         res.status(500).json({ message: 'خطا در سرور', error: err.message });
@@ -169,13 +166,10 @@ exports.changePassword = async (req, res) => {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'کاربر پیدا نشد' });
 
-        // چک کردن رمز فعلی
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'رمز عبور فعلی اشتباه است' });
         }
-
-        // هش کردن رمز جدید و ذخیره
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
         await user.save();
