@@ -28,7 +28,7 @@ import com.example.complex.ui.WelcomeScreen
 
 private enum class Screen {
     Welcome, Login, ForgotPassword, VerifyCode, SignUp, Name, Level, EnglishLevel, Topic,
-    AllSet, Home, Profile, LogoutConfirm
+    AllSet, Home, Profile, EditName, ChangePassword, LogoutConfirm
 }
 
 class MainActivity : ComponentActivity() {
@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
                 var userLevelName by rememberSaveable { mutableStateOf<String?>(null) }
                 var englishLevelName by rememberSaveable { mutableStateOf<String?>(null) }
                 var avatarIndex by rememberSaveable { mutableStateOf<Int?>(null) }
+                var userPassword by rememberSaveable { mutableStateOf("") }
 
                 // وقتی عکس‌های آواتار را در res/drawable گذاشتید، این لیست را فعال کنید:
                 // val avatarResIds = listOf(
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = screen != Screen.Welcome && screen != Screen.Home) {
                     screen = when (screen) {
                         Screen.LogoutConfirm -> Screen.Profile
+                        Screen.EditName, Screen.ChangePassword -> Screen.Profile
                         Screen.Profile -> Screen.Home
                         Screen.AllSet -> Screen.Topic
                         Screen.Topic -> Screen.EnglishLevel
@@ -182,7 +184,31 @@ class MainActivity : ComponentActivity() {
                         avatarResIds = avatarResIds,
                         onAvatarSelected = { avatarIndex = it },
                         onBack = { screen = Screen.Home },
+                        onFullNameClick = { screen = Screen.EditName },
+                        onPasswordClick = { screen = Screen.ChangePassword },
                         onLogOut = { screen = Screen.LogoutConfirm }
+                    )
+
+                    // ویرایش نام
+                    Screen.EditName -> EditNameScreen(
+                        currentName = "$firstName $lastName".trim(),
+                        onBackClick = { screen = Screen.Profile },
+                        onSaveClick = { updatedName ->
+                            val parts = updatedName.trim().split(Regex("\\s+"), limit = 2)
+                            firstName = parts.firstOrNull().orEmpty()
+                            lastName = parts.getOrNull(1).orEmpty()
+                            screen = Screen.Profile
+                        }
+                    )
+
+                    // تغییر رمز عبور (فعلاً فقط در حافظه محلی برنامه)
+                    Screen.ChangePassword -> ChangePasswordScreen(
+                        currentPassword = userPassword,
+                        onBackClick = { screen = Screen.Profile },
+                        onSaveClick = { newPassword ->
+                            userPassword = newPassword
+                            screen = Screen.Profile
+                        }
                     )
 
                     // 11) تأیید خروج
