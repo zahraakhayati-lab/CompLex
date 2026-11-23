@@ -231,7 +231,7 @@ fun ChangePasswordScreen(
         Button(
             onClick = {
                 // چک کردن شرایط
-                if (currentPass != currentPassword) {
+                if (currentPassword.isNotBlank() && currentPass != currentPassword) {
                     errorMessage = "Current password is incorrect"
                     showErrorDialog = true
                 } else if (newPass.length < 6) {
