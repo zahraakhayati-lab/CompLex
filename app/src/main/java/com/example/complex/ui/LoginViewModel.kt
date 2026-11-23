@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج را بر اساس ساختار پروژه خود تغییر دهید
+package com.example.complex.ui
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -10,8 +10,6 @@ import com.example.complex.data.remote.RetrofitInstance
 import kotlinx.coroutines.launch
 
 class LoginViewModel : ViewModel() {
-
-    // این متغیرها برای این هستند که صفحه (UI) بفهمد چه خبر است
     var isLoading by mutableStateOf(false)
         private set
 
@@ -21,25 +19,19 @@ class LoginViewModel : ViewModel() {
     var isLoginSuccessful by mutableStateOf(false)
         private set
 
-    fun loginUser(username: String, password: String) {
+    fun loginUser(email: String, password: String) {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             isLoginSuccessful = false
 
             try {
-                // درخواست به سرور
-                val response = RetrofitInstance.service.login(LoginRequest(username, password))
-
-                // اگر به اینجا رسید یعنی درخواست موفق بوده (کد 200)
-                isLoading = false
+                RetrofitInstance.service.login(LoginRequest(email.trim(), password))
                 isLoginSuccessful = true
-                // می‌توانید توکن را در اینجا ذخیره کنید: response.token
-
             } catch (e: Exception) {
-                // اگر خطایی رخ داد (مثلاً اینترنت قطع بود یا سرور ارور داد)
+                errorMessage = "Error in server connection: ${e.message ?: "Unknown error"}"
+            } finally {
                 isLoading = false
-                errorMessage = "Error in server connection ${e.message}"
             }
         }
     }
