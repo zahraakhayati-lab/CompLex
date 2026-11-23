@@ -19,14 +19,14 @@ class LoginViewModel : ViewModel() {
     var isLoginSuccessful by mutableStateOf(false)
         private set
 
-    fun loginUser(username: String, password: String) {
+    fun loginUser(email: String, password: String) {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             isLoginSuccessful = false
 
             try {
-                RetrofitInstance.service.login(LoginRequest(username, password))
+                RetrofitInstance.service.login(LoginRequest(email.trim(), password))
                 isLoginSuccessful = true
             } catch (e: Exception) {
                 errorMessage = "Error in server connection: ${e.message ?: "Unknown error"}"
