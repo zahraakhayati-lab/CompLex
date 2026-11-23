@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج را بر اساس ساختار پروژه خود تغییر دهید
+package com.example.complex.ui
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,7 +11,6 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel : ViewModel() {
 
-    // این متغیرها برای این هستند که صفحه (UI) بفهمد چه خبر است
     var isLoading by mutableStateOf(false)
         private set
 
@@ -21,25 +20,31 @@ class LoginViewModel : ViewModel() {
     var isLoginSuccessful by mutableStateOf(false)
         private set
 
-    fun loginUser(username: String, password: String) {
+    var loggedInUserId by mutableStateOf<String?>(null)
+        private set
+
+    var loggedInUserEmail by mutableStateOf<String?>(null)
+        private set
+
+    fun loginUser(email: String, password: String) {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             isLoginSuccessful = false
+            loggedInUserId = null
+            loggedInUserEmail = null
 
             try {
-                // درخواست به سرور
-                val response = RetrofitInstance.service.login(LoginRequest(username, password))
-
-                // اگر به اینجا رسید یعنی درخواست موفق بوده (کد 200)
-                isLoading = false
+                val response = RetrofitInstance.service.login(
+                    LoginRequest(email = email.trim(), password = password)
+                )
+                loggedInUserId = response.user.id
+                loggedInUserEmail = response.user.email ?: email.trim()
                 isLoginSuccessful = true
-                // می‌توانید توکن را در اینجا ذخیره کنید: response.token
-
             } catch (e: Exception) {
-                // اگر خطایی رخ داد (مثلاً اینترنت قطع بود یا سرور ارور داد)
+                errorMessage = "Login failed: ${e.message ?: "Please try again"}"
+            } finally {
                 isLoading = false
-                errorMessage = "Error in server connection ${e.message}"
             }
         }
     }
