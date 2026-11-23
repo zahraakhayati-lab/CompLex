@@ -231,18 +231,21 @@ class MainActivity : ComponentActivity() {
                         },
                         onSaveClick = { currentPassword, newPassword ->
                             changePasswordError = null
-                            changePasswordLoading = true
-                            lifecycleScope.launch {
-                                try {
-                                    RetrofitInstance.service.changePassword(
-                                        ChangePasswordRequest(
-                                            userId = loggedInUserId,
-                                            currentPassword = currentPassword,
-                                            newPassword = newPassword
+                            if (loggedInUserId.isBlank()) {
+                                changePasswordError = "Please log in again before changing your password."
+                            } else {
+                                changePasswordLoading = true
+                                lifecycleScope.launch {
+                                    try {
+                                        RetrofitInstance.service.changePassword(
+                                            ChangePasswordRequest(
+                                                userId = loggedInUserId,
+                                                currentPassword = currentPassword,
+                                                newPassword = newPassword
+                                            )
                                         )
-                                    )
-                                    changePasswordSuccess = true
-                                } catch (e: HttpException) {
+                                        changePasswordSuccess = true
+                                    } catch (e: HttpException) {
                                     val body = e.response()?.errorBody()?.string()
                                     changePasswordError = try {
                                         body?.let { JSONObject(it).optString("message") }
@@ -250,10 +253,11 @@ class MainActivity : ComponentActivity() {
                                     } catch (_: Exception) {
                                         null
                                     } ?: "Current password is incorrect or request failed"
-                                } catch (e: Exception) {
-                                    changePasswordError = "Connection error. Please try again."
-                                } finally {
-                                    changePasswordLoading = false
+                                    } catch (e: Exception) {
+                                        changePasswordError = "Connection error. Please try again."
+                                    } finally {
+                                        changePasswordLoading = false
+                                    }
                                 }
                             }
                         }
