@@ -10,6 +10,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import retrofit2.HttpException
+import com.example.complex.data.remote.ChangePasswordRequest
+import com.example.complex.data.remote.RetrofitInstance
 import com.example.complex.ui.AllSetScreen
 import com.example.complex.ui.EnglishLevel
 import com.example.complex.ui.EnglishLevelScreen
@@ -47,7 +53,10 @@ class MainActivity : ComponentActivity() {
                 var userLevelName by rememberSaveable { mutableStateOf<String?>(null) }
                 var englishLevelName by rememberSaveable { mutableStateOf<String?>(null) }
                 var avatarIndex by rememberSaveable { mutableStateOf<Int?>(null) }
-                var userPassword by rememberSaveable { mutableStateOf("") }
+                var loggedInUserId by rememberSaveable { mutableStateOf("") }
+                var changePasswordLoading by rememberSaveable { mutableStateOf(false) }
+                var changePasswordError by rememberSaveable { mutableStateOf<String?>(null) }
+                var changePasswordSuccess by rememberSaveable { mutableStateOf(false) }
 
                 // وقتی عکس‌های آواتار را در res/drawable گذاشتید، این لیست را فعال کنید:
                 // val avatarResIds = listOf(
@@ -85,7 +94,11 @@ class MainActivity : ComponentActivity() {
                     // 2) ورود
                     Screen.Login -> LoginScreen(
                         onBack = { screen = Screen.Welcome },
-                        onLoginSuccess = { screen = Screen.Level },
+                        onLoginSuccess = { userId, email ->
+                            loggedInUserId = userId
+                            if (email.isNotBlank()) userEmail = email
+                            screen = Screen.Level
+                        },
                         onNavigateToRegister = { screen = Screen.SignUp },
                         onForgotPassword = { screen = Screen.ForgotPassword }
                     )
@@ -201,13 +214,48 @@ class MainActivity : ComponentActivity() {
                         }
                     )
 
-                    // تغییر رمز عبور (فعلاً فقط در حافظه محلی برنامه)
+                    // تغییر رمز عبور از طریق سرور
                     Screen.ChangePassword -> ChangePasswordScreen(
-                        currentPassword = userPassword,
-                        onBackClick = { screen = Screen.Profile },
-                        onSaveClick = { newPassword ->
-                            userPassword = newPassword
+                        onBackClick = {
+                            changePasswordError = null
+                            changePasswordSuccess = false
                             screen = Screen.Profile
+                        },
+                        isLoading = changePasswordLoading,
+                        errorMessage = changePasswordError,
+                        changeSuccess = changePasswordSuccess,
+                        onSuccessAcknowledged = {
+                            changePasswordSuccess = false
+                            changePasswordError = null
+                            screen = Screen.Profile
+                        },
+                        onSaveClick = { currentPassword, newPassword ->
+                            changePasswordError = null
+                            changePasswordLoading = true
+                            lifecycleScope.launch {
+                                try {
+                                    RetrofitInstance.service.changePassword(
+                                        ChangePasswordRequest(
+                                            userId = loggedInUserId,
+                                            currentPassword = currentPassword,
+                                            newPassword = newPassword
+                                        )
+                                    )
+                                    changePasswordSuccess = true
+                                } catch (e: HttpException) {
+                                    val body = e.response()?.errorBody()?.string()
+                                    changePasswordError = try {
+                                        body?.let { JSONObject(it).optString("message") }
+                                            ?.takeIf { it.isNotBlank() }
+                                    } catch (_: Exception) {
+                                        null
+                                    } ?: "Current password is incorrect or request failed"
+                                } catch (e: Exception) {
+                                    changePasswordError = "Connection error. Please try again."
+                                } finally {
+                                    changePasswordLoading = false
+                                }
+                            }
                         }
                     )
 
@@ -218,6 +266,9 @@ class MainActivity : ComponentActivity() {
                         onLogOut = {
                             // TODO: پاک کردن توکن/نشست واقعی
                             userEmail = ""
+                            loggedInUserId = ""
+                            changePasswordError = null
+                            changePasswordSuccess = false
                             firstName = ""
                             lastName = ""
                             userLevelName = null
