@@ -1,57 +1,54 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+
+package com.example.complex.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.EmojiEvents
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.EmojiEvents
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.ui.graphics.vector.ImageVector
 
 private val BrandBlue = Color(0xFF0099FF)
 private val PageBg = Color(0xFFF4FAFF)
 private val TitleColor = Color(0xFF111111)
 private val TextBlue = Color(0xFF3E6079)
-private val SubtitleColor = Color(0xFF4A6075)
 private val NoteGray = Color(0xFF8A8F94)
 private val CardBorder = Color(0xFFCFE6F5)
 private val TrackGray = Color(0xFFDEDEDE)
 private val FlameOrange = Color(0xFFFF8A00)
 
-enum class DashboardDayState { DONE, TODAY, FUTURE }
+enum class DashboardDayState {
+    DONE, TODAY, FUTURE
+}
 
-enum class DashboardTab(val label: String, val icon: ImageVector) {
+enum class DashboardTab(
+    val label: String,
+    val icon: ImageVector
+) {
     HOME("Home", Icons.Outlined.Home),
     LEARNING("Learning", Icons.Outlined.Code),
     DICTIONARY("Dictionary", Icons.AutoMirrored.Outlined.MenuBook),
@@ -61,59 +58,60 @@ enum class DashboardTab(val label: String, val icon: ImageVector) {
 @Composable
 fun HomeDashboardScreen(
     hearts: Int = 5,
-    points: Int = 1240,
-    level: Int = 3,
-    levelProgress: Float = 0.8f,
+    points: Int = 0,
+    level: Int = 1,
+    levelProgress: Float = 0f,
     wordTitle: String = "Encryption",
-    wordDefinition: String = "Definition : The process of converting data into a secure format.",
-    wordExample: String = "“Encryption protects sensitive information from unauthorized access.”",
-    streakDays: Int = 12,
-    weekStates: List<DashboardDayState> = listOf(
-        DashboardDayState.DONE, DashboardDayState.DONE, DashboardDayState.DONE,
-        DashboardDayState.DONE, DashboardDayState.DONE,
-        DashboardDayState.TODAY, DashboardDayState.FUTURE
-    ),
-    recentTitle: String = "The Programming Process",
-    recentStep: String = "Step 3",
-    recentProgress: Float = 0.75f,
+    wordDefinition: String = "Definition: The process of converting data into a secure format.",
+    wordExample: String = "Encryption protects sensitive information from unauthorized access.",
+    streakDays: Int = 0,
+    weekStates: List<DashboardDayState> = List(7) {
+        DashboardDayState.FUTURE
+    },
+    recentTitle: String = "Reading",
+    recentStep: String = "Not started yet • 0 activities completed",
+    recentProgress: Float = 0f,
     onMenuClick: () -> Unit = {},
     onTabSelected: (DashboardTab) -> Unit = {}
 ) {
-    var selectedTab by rememberSaveable { mutableStateOf(DashboardTab.HOME) }
+    var selectedTab by rememberSaveable {
+        mutableStateOf(DashboardTab.HOME)
+    }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = PageBg) {
-        Box(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = PageBg
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(top = 12.dp)
+        ) {
 
-            // ---------- محتوای اسکرول‌شونده ----------
+            // هدر ثابت و مشترک
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                DashboardHeader(
+                    hearts = hearts,
+                    points = points,
+                    onMenuClick = onMenuClick
+                )
+            }
+
+            // محتوای Home قابل اسکرول
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
+                    .weight(1f)
+                    .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp)
+                    .padding(horizontal = 16.dp)
             ) {
-                // --- Top bar ---
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onMenuClick, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            imageVector = Icons.Outlined.GridView,
-                            contentDescription = "Menu",
-                            tint = Color(0xFF8FA0AE),
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    StatChip(Icons.Filled.Favorite, Color(0xFFE53935), hearts.toString())
-                    Spacer(modifier = Modifier.width(12.dp))
-                    StatChip(Icons.Filled.Bolt, Color(0xFF7C5CFA), points.toString())
-                }
+                Spacer(Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // --- Your Progress ---
                 Text(
                     text = "Your Progress",
                     fontSize = 22.sp,
@@ -121,13 +119,12 @@ fun HomeDashboardScreen(
                     color = TitleColor
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(Modifier.height(20.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // کارت سطح
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = Color.White,
@@ -147,20 +144,26 @@ fun HomeDashboardScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 color = TextBlue
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
+
+                            Spacer(Modifier.height(12.dp))
+
+                            Box(
+                                modifier = Modifier.size(100.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 CircularProgressIndicator(
-                                    progress = { levelProgress },
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .rotate(60f),
+                                    progress = {
+                                        levelProgress.coerceIn(0f, 1f)
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
                                     color = BrandBlue,
                                     trackColor = TrackGray,
                                     strokeWidth = 6.dp,
                                     strokeCap = StrokeCap.Round
                                 )
+
                                 Text(
-                                    text = level.toString(),
+                                    text = level.coerceAtLeast(1).toString(),
                                     fontSize = 40.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = TextBlue
@@ -169,7 +172,6 @@ fun HomeDashboardScreen(
                         }
                     }
 
-                    // کارت لغت روز
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = Color.White,
@@ -178,14 +180,18 @@ fun HomeDashboardScreen(
                             .weight(1f)
                             .height(172.dp)
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
                             Text(
                                 text = wordTitle,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = TextBlue
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Spacer(Modifier.height(10.dp))
+
                             Text(
                                 text = wordDefinition,
                                 fontSize = 11.sp,
@@ -193,7 +199,9 @@ fun HomeDashboardScreen(
                                 fontWeight = FontWeight.Medium,
                                 color = TextBlue
                             )
-                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Spacer(Modifier.height(10.dp))
+
                             Text(
                                 text = wordExample,
                                 fontSize = 11.sp,
@@ -204,16 +212,16 @@ fun HomeDashboardScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(Modifier.height(28.dp))
 
-                // --- Streak ---
                 Text(
                     text = "Streak",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TitleColor
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+
+                Spacer(Modifier.height(12.dp))
 
                 Surface(
                     shape = RoundedCornerShape(20.dp),
@@ -221,13 +229,22 @@ fun HomeDashboardScreen(
                     shadowElevation = 8.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(
+                        modifier = Modifier.padding(
+                            horizontal = 24.dp,
+                            vertical = 22.dp
+                        )
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Box(
                                 modifier = Modifier
                                     .size(80.dp)
                                     .clip(RoundedCornerShape(20.dp))
-                                    .background(Color.White.copy(alpha = 0.22f)),
+                                    .background(
+                                        Color.White.copy(alpha = 0.22f)
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -237,16 +254,22 @@ fun HomeDashboardScreen(
                                     modifier = Modifier.size(52.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(24.dp))
-                            Row(verticalAlignment = Alignment.Bottom) {
+
+                            Spacer(Modifier.width(24.dp))
+
+                            Row(
+                                verticalAlignment = Alignment.Bottom
+                            ) {
                                 Text(
-                                    text = streakDays.toString(),
+                                    text = streakDays.coerceAtLeast(0).toString(),
                                     fontSize = 64.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = Color.White,
                                     lineHeight = 70.sp
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+
+                                Spacer(Modifier.width(8.dp))
+
                                 Text(
                                     text = "days",
                                     fontSize = 16.sp,
@@ -257,40 +280,50 @@ fun HomeDashboardScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(Modifier.height(18.dp))
 
-                        // روزهای هفته
-                        val letters = listOf("M", "T", "W", "T", "F", "S", "S")
+                        val letters = listOf(
+                            "M", "T", "W", "T", "F", "S", "S"
+                        )
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             letters.forEachIndexed { index, letter ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
                                     Text(
                                         text = letter,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.White
                                     )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    DayCircle(weekStates.getOrElse(index) { DashboardDayState.FUTURE })
+
+                                    Spacer(Modifier.height(8.dp))
+
+                                    DayCircle(
+                                        weekStates.getOrElse(index) {
+                                            DashboardDayState.FUTURE
+                                        }
+                                    )
                                 }
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(Modifier.height(28.dp))
 
-                // --- Recent Reading ---
                 Text(
                     text = "Recent Reading",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TitleColor
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+
+                Spacer(Modifier.height(12.dp))
 
                 Surface(
                     shape = RoundedCornerShape(16.dp),
@@ -299,16 +332,29 @@ fun HomeDashboardScreen(
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)) {
+                    Column(
+                        modifier = Modifier.padding(
+                            horizontal = 24.dp,
+                            vertical = 24.dp
+                        )
+                    ) {
                         Text(
                             text = recentTitle,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = TextBlue
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(text = recentStep, fontSize = 12.sp, color = NoteGray)
-                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Spacer(Modifier.height(2.dp))
+
+                        Text(
+                            text = recentStep,
+                            fontSize = 12.sp,
+                            color = NoteGray
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -318,7 +364,9 @@ fun HomeDashboardScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth(recentProgress.coerceIn(0f, 1f))
+                                    .fillMaxWidth(
+                                        recentProgress.coerceIn(0f, 1f)
+                                    )
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(50))
                                     .background(BrandBlue)
@@ -326,73 +374,18 @@ fun HomeDashboardScreen(
                         }
                     }
                 }
+
+                Spacer(Modifier.height(25.dp))
             }
 
-            // ---------- Bottom navigation ----------
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, CardBorder),
-                shadowElevation = 4.dp,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 16.dp)
-                    .fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(vertical = 14.dp),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DashboardTab.values().forEach { tab ->
-                        val selected = tab == selectedTab
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    selectedTab = tab
-                                    onTabSelected(tab)
-                                }
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label,
-                                tint = if (selected) BrandBlue else Color(0xFF8FA0AE),
-                                modifier = Modifier.size(26.dp)
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = tab.label,
-                                fontSize = 10.sp,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (selected) BrandBlue else Color(0xFF8FA0AE),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
+            // نوار پایین ثابت و مشترک
+            DashboardBottomBar(
+                selectedTab = selectedTab,
+                onTabSelected = {
+                    selectedTab = it
+                    onTabSelected(it)
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatChip(icon: ImageVector, tint: Color, text: String) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = Color.White,
-        border = BorderStroke(1.dp, CardBorder)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(text = text, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TitleColor)
+            )
         }
     }
 }
@@ -415,12 +408,17 @@ private fun DayCircle(state: DashboardDayState) {
             )
         }
 
-        DashboardDayState.TODAY -> Canvas(modifier = Modifier.size(34.dp)) {
+        DashboardDayState.TODAY -> Canvas(
+            modifier = Modifier.size(34.dp)
+        ) {
             drawCircle(
                 color = Color.White,
                 style = Stroke(
                     width = 1.5.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+                    pathEffect = PathEffect.dashPathEffect(
+                        floatArrayOf(6f, 6f),
+                        0f
+                    )
                 )
             )
         }

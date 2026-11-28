@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+package com.example.complex.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -63,7 +63,6 @@ fun EnglishLevelScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Step indicator (فقط مرحله‌ی فعلی آبی است) ---
             EnglishStepIndicator(
                 currentStep = currentStep,
                 totalSteps = totalSteps,

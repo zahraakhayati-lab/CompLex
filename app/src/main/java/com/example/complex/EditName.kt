@@ -70,7 +70,6 @@ fun EditNameScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // فیلد نام (محدودیت 12 کاراکتر)
         Text(
             text = "First name *",
             fontSize = 14.sp,
@@ -81,7 +80,7 @@ fun EditNameScreen(
         OutlinedTextField(
             value = firstName,
             onValueChange = {
-                if (it.length <= 12) firstName = it
+                if (it.length <= 24) firstName = it
             },
             placeholder = { Text("e.g. Lily", color = TextGray) },
             modifier = Modifier.fillMaxWidth(),
@@ -101,7 +100,6 @@ fun EditNameScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // فیلد نام خانوادگی (محدودیت 12 کاراکتر)
         Text(
             text = "Last name (Optional)",
             fontSize = 14.sp,

@@ -3,20 +3,20 @@ const mongoose = require('mongoose');
 const wordSchema = new mongoose.Schema({
     englishWord: {
         type: String,
-        required: [true, 'وارد کردن لغت انگلیسی الزامی است'],
+        required: [true, 'English word is required'],
         unique: true,
         trim: true
     },
     definition: {
         type: String,
-        required: [true, 'وارد کردن تعریف الزامی است']
+        required: [true, 'Definition is required']
     },
     example: {
         type: String
     },
     category: {
         type: String,
-        required: [true, 'وارد کردن دسته‌بندی الزامی است']
+        required: [true, 'Category is required']
     },
     difficulty: {
         type: String,

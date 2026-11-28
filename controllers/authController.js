@@ -9,7 +9,7 @@ exports.register = async (req, res) => {
     try {
         console.log("دیتای دریافتی از Postman:", req.body);
         const { name, email, password } = req.body;
-        
+
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: 'این ایمیل قبلاً ثبت شده است' });
@@ -36,7 +36,7 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
         const user = await User.findOne({ email });
-        
+
         if (!user) {
             return res.status(400).json({ message: 'ایمیل یا رمز عبور اشتباه است' });
         }
@@ -46,16 +46,18 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'ایمیل یا رمز عبور اشتباه است' });
         }
 
+        // ====== محاسبه استریک (اصلاح شده) ======
         const today = new Date();
         today.setHours(0, 0, 0, 0); // صفر کردن ساعت برای مقایسه دقیق روزها
 
         let currentStreak = user.streak || 0;
-        
+
+        // اصلاح شد: استفاده از Date به جای DataTransfer
         let lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
 
         if (lastLogin) {
             lastLogin.setHours(0, 0, 0, 0); // صفر کردن ساعت تاریخ قبلی
-            
+
             // محاسبه اختلاف روزها
             const diffTime = Math.abs(today - lastLogin);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -107,17 +109,18 @@ exports.login = async (req, res) => {
 exports.updateProfile = async (req, res) => {
     try {
         const { userId, name, englishLevel, userType, interests } = req.body;
-        
+
         const updatedUser = await User.findByIdAndUpdate(
             userId,
             { name, englishLevel, userType, interests },
             { new: true }
         );
-        
+
         if (!updatedUser) {
             return res.status(404).json({ message: 'کاربر پیدا نشد' });
         }
-      
+
+        // اصلاح شد: updatedUser
         res.status(200).json({ message: 'پروفایل با موفقیت آپدیت شد', user: updatedUser });
     } catch (err) {
         res.status(500).json({ message: 'خطا در سرور', error: err.message });
@@ -128,7 +131,7 @@ exports.updateProfile = async (req, res) => {
 exports.updateStats = async (req, res) => {
     try {
         const { userId, xpToAdd, livesToRemove } = req.body;
-        
+
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'کاربر پیدا نشد' });
 
@@ -166,81 +169,18 @@ exports.changePassword = async (req, res) => {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'کاربر پیدا نشد' });
 
+        // چک کردن رمز فعلی
         const isMatch = await bcrypt.compare(currentPassword, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'رمز عبور فعلی اشتباه است' });
-        }
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(newPassword, salt);
-        await user.save();
-
-        res.status(200).json({ message: 'رمز عبور با موفقیت تغییر کرد' });
-    } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
-    }
-};
-// ۷. درخواست بازیابی رمز عبور (ارسال کد به ترمینال)
-exports.forgotPassword = async (req, res) => {
-    try {
-        const { email } = req.body; 
-        
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'کاربری با این ایمیل پیدا نشد' });
-        }
-
-        // ساخت یک کد ۶ رقمی تصادفی
-        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // ذخیره کد و زمان انقضا (۲ دقیقه بعد) در دیتابیس
-        user.resetPasswordCode = resetCode;
-        user.resetPasswordExpires = Date.now() + 2 * 60 * 1000; // ۲ دقیقه
-        await user.save();
-
-        // چاپ کد در ترمینال (به جای ارسال ایمیل)
-        console.log(`\n=================================`);
-        console.log(`🚨 کد بازیابی برای ${email}: ${resetCode} 🚨`);
-        console.log(`=================================\n`);
-
-        res.status(200).json({ message: 'کد بازیابی در ترمینال سرور چاپ شد (برای تست به ترمینال VS Code نگاه کنید)' });
-
-    } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
-    }
-};
-
-// ۸. تایید کد و تغییر رمز عبور جدید
-exports.resetPassword = async (req, res) => {
-    try {
-        const { email, code, newPassword } = req.body;
-
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({ message: 'کاربر پیدا نشد' });
-        }
-
-        // چک کردن اینکه کد درست باشه
-        if (user.resetPasswordCode !== code) {
-            return res.status(400).json({ message: 'کد وارد شده اشتباه است' });
-        }
-
-        // چک کردن اینکه کد منقضی نشده باشه
-        if (user.resetPasswordExpires < Date.now()) {
-            return res.status(400).json({ message: 'کد شما منقضی شده است. دوباره درخواست دهید' });
         }
 
         // هش کردن رمز جدید و ذخیره
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(newPassword, salt);
-
-        // پاک کردن کدهای موقت بعد از استفاده
-        user.resetPasswordCode = null;
-        user.resetPasswordExpires = null;
-        
         await user.save();
 
-        res.status(200).json({ message: 'رمز عبور شما با موفقیت تغییر کرد. حالا می‌توانید لاگین کنید' });
-
+        res.status(200).json({ message: 'رمز عبور با موفقیت تغییر کرد' });
     } catch (err) {
         res.status(500).json({ message: 'خطا در سرور', error: err.message });
     }

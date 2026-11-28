@@ -10,17 +10,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import org.json.JSONObject
-import retrofit2.HttpException
-import com.example.complex.data.remote.ChangePasswordRequest
-import com.example.complex.data.remote.RetrofitInstance
 import com.example.complex.ui.AllSetScreen
 import com.example.complex.ui.EnglishLevel
 import com.example.complex.ui.EnglishLevelScreen
 import com.example.complex.ui.ForgotPasswordScreen
 import com.example.complex.ui.HomeDashboardScreen
+import com.example.complex.ui.DashboardTab
+import com.example.complex.ui.LearningPathScreen
 import com.example.complex.ui.LevelScreen
 import com.example.complex.ui.LoginScreen
 import com.example.complex.ui.LogoutConfirmScreen
@@ -34,7 +30,7 @@ import com.example.complex.ui.WelcomeScreen
 
 private enum class Screen {
     Welcome, Login, ForgotPassword, VerifyCode, SignUp, Name, Level, EnglishLevel, Topic,
-    AllSet, Home, Profile, EditName, ChangePassword, LogoutConfirm
+    AllSet, Home, Learning, Profile, LogoutConfirm
 }
 
 class MainActivity : ComponentActivity() {
@@ -53,10 +49,6 @@ class MainActivity : ComponentActivity() {
                 var userLevelName by rememberSaveable { mutableStateOf<String?>(null) }
                 var englishLevelName by rememberSaveable { mutableStateOf<String?>(null) }
                 var avatarIndex by rememberSaveable { mutableStateOf<Int?>(null) }
-                var loggedInUserId by rememberSaveable { mutableStateOf("") }
-                var changePasswordLoading by rememberSaveable { mutableStateOf(false) }
-                var changePasswordError by rememberSaveable { mutableStateOf<String?>(null) }
-                var changePasswordSuccess by rememberSaveable { mutableStateOf(false) }
 
                 // وقتی عکس‌های آواتار را در res/drawable گذاشتید، این لیست را فعال کنید:
                 // val avatarResIds = listOf(
@@ -69,8 +61,8 @@ class MainActivity : ComponentActivity() {
                 BackHandler(enabled = screen != Screen.Welcome && screen != Screen.Home) {
                     screen = when (screen) {
                         Screen.LogoutConfirm -> Screen.Profile
-                        Screen.EditName, Screen.ChangePassword -> Screen.Profile
                         Screen.Profile -> Screen.Home
+                        Screen.Learning -> Screen.Home
                         Screen.AllSet -> Screen.Topic
                         Screen.Topic -> Screen.EnglishLevel
                         Screen.EnglishLevel -> Screen.Level
@@ -94,11 +86,7 @@ class MainActivity : ComponentActivity() {
                     // 2) ورود
                     Screen.Login -> LoginScreen(
                         onBack = { screen = Screen.Welcome },
-                        onLoginSuccess = { userId, email ->
-                            loggedInUserId = userId
-                            if (email.isNotBlank()) userEmail = email
-                            screen = Screen.Level
-                        },
+                        onLoginSuccess = { screen = Screen.Home },
                         onNavigateToRegister = { screen = Screen.SignUp },
                         onForgotPassword = { screen = Screen.ForgotPassword }
                     )
@@ -181,13 +169,23 @@ class MainActivity : ComponentActivity() {
 
                     // 9) صفحه‌ی اصلی
                     Screen.Home -> HomeDashboardScreen(
-                        onMenuClick = { screen = Screen.Profile }, // آیکن چهارخانه ← Dashboard
+                        onMenuClick = {
+                            screen = Screen.Profile
+                        },
                         onTabSelected = { tab ->
-                            // TODO: رفتن به صفحه‌های Learning / Dictionary / Competition
+                            if (tab == DashboardTab.LEARNING) {
+                                screen = Screen.Learning
+                            }
                         }
                     )
 
-                    // 10) Dashboard (پروفایل)
+                    Screen.Learning -> LearningPathScreen(
+                        onTabSelected = { tab ->
+                            if (tab == DashboardTab.HOME) {
+                                screen = Screen.Home
+                            }
+                        }
+                    )
                     Screen.Profile -> ProfileDashboardScreen(
                         // اگر کاربر از Login آمده و هنوز نام/ایمیلی ثبت نشده، نمونه‌ی طرح نمایش داده می‌شود
                         fullName = "$firstName $lastName".trim().ifBlank { "Lily Woods" },
@@ -197,70 +195,7 @@ class MainActivity : ComponentActivity() {
                         avatarResIds = avatarResIds,
                         onAvatarSelected = { avatarIndex = it },
                         onBack = { screen = Screen.Home },
-                        onFullNameClick = { screen = Screen.EditName },
-                        onPasswordClick = { screen = Screen.ChangePassword },
                         onLogOut = { screen = Screen.LogoutConfirm }
-                    )
-
-                    // ویرایش نام
-                    Screen.EditName -> EditNameScreen(
-                        currentName = "$firstName $lastName".trim(),
-                        onBackClick = { screen = Screen.Profile },
-                        onSaveClick = { updatedName ->
-                            val parts = updatedName.trim().split(Regex("\\s+"), limit = 2)
-                            firstName = parts.firstOrNull().orEmpty()
-                            lastName = parts.getOrNull(1).orEmpty()
-                            screen = Screen.Profile
-                        }
-                    )
-
-                    // تغییر رمز عبور از طریق سرور
-                    Screen.ChangePassword -> ChangePasswordScreen(
-                        onBackClick = {
-                            changePasswordError = null
-                            changePasswordSuccess = false
-                            screen = Screen.Profile
-                        },
-                        isLoading = changePasswordLoading,
-                        errorMessage = changePasswordError,
-                        changeSuccess = changePasswordSuccess,
-                        onSuccessAcknowledged = {
-                            changePasswordSuccess = false
-                            changePasswordError = null
-                            screen = Screen.Profile
-                        },
-                        onSaveClick = { currentPassword, newPassword ->
-                            changePasswordError = null
-                            if (loggedInUserId.isBlank()) {
-                                changePasswordError = "Please log in again before changing your password."
-                            } else {
-                                changePasswordLoading = true
-                                lifecycleScope.launch {
-                                    try {
-                                        RetrofitInstance.service.changePassword(
-                                            ChangePasswordRequest(
-                                                userId = loggedInUserId,
-                                                currentPassword = currentPassword,
-                                                newPassword = newPassword
-                                            )
-                                        )
-                                        changePasswordSuccess = true
-                                    } catch (e: HttpException) {
-                                    val body = e.response()?.errorBody()?.string()
-                                    changePasswordError = try {
-                                        body?.let { JSONObject(it).optString("message") }
-                                            ?.takeIf { it.isNotBlank() }
-                                    } catch (_: Exception) {
-                                        null
-                                    } ?: "Current password is incorrect or request failed"
-                                    } catch (e: Exception) {
-                                        changePasswordError = "Connection error. Please try again."
-                                    } finally {
-                                        changePasswordLoading = false
-                                    }
-                                }
-                            }
-                        }
                     )
 
                     // 11) تأیید خروج
@@ -270,9 +205,6 @@ class MainActivity : ComponentActivity() {
                         onLogOut = {
                             // TODO: پاک کردن توکن/نشست واقعی
                             userEmail = ""
-                            loggedInUserId = ""
-                            changePasswordError = null
-                            changePasswordSuccess = false
                             firstName = ""
                             lastName = ""
                             userLevelName = null

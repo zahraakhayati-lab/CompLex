@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+package com.example.complex.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,10 +32,7 @@ private val SubtitleColor = Color(0xFF4A6075)
 private val CardColor = Color(0xFFF0F0F0)
 private val Violet = Color(0xFF6C63F0)
 
-/**
- * illustration را می‌توانید با painterResource(R.drawable.xxx) بدهید.
- * اگر null باشد یک جایگزین ساده نمایش داده می‌شود.
- */
+
 @Composable
 fun AllSetScreen(
     userLevel: UserLevel?,

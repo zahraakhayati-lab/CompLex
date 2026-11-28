@@ -39,15 +39,14 @@ private val BorderColor = Color(0xFF4A6075)
 fun LoginScreen(
     viewModel: LoginViewModel = viewModel(),
     onBack: () -> Unit = {},
-    onLoginSuccess: (userId: String, email: String) -> Unit,
+    onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
     onForgotPassword: () -> Unit = {},
     onTermsClick: () -> Unit = {}
 ) {
-    LaunchedEffect(viewModel.isLoginSuccessful, viewModel.loggedInUserId) {
-        val userId = viewModel.loggedInUserId
-        if (viewModel.isLoginSuccessful && !userId.isNullOrBlank()) {
-            onLoginSuccess(userId, viewModel.loggedInUserEmail.orEmpty())
+    LaunchedEffect(viewModel.isLoginSuccessful) {
+        if (viewModel.isLoginSuccessful) {
+            onLoginSuccess()
         }
     }
 

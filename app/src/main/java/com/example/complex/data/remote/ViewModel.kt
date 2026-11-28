@@ -1,5 +1,4 @@
-package com.example.complex.ui
-
+﻿package com.example.complex.ui
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -20,31 +19,22 @@ class LoginViewModel : ViewModel() {
     var isLoginSuccessful by mutableStateOf(false)
         private set
 
-    var loggedInUserId by mutableStateOf<String?>(null)
-        private set
-
-    var loggedInUserEmail by mutableStateOf<String?>(null)
-        private set
-
     fun loginUser(email: String, password: String) {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             isLoginSuccessful = false
-            loggedInUserId = null
-            loggedInUserEmail = null
 
             try {
-                val response = RetrofitInstance.service.login(
-                    LoginRequest(email = email.trim(), password = password)
-                )
-                loggedInUserId = response.user.id
-                loggedInUserEmail = response.user.email ?: email.trim()
-                isLoginSuccessful = true
-            } catch (e: Exception) {
-                errorMessage = "Login failed: ${e.message ?: "Please try again"}"
-            } finally {
+
+                val response = RetrofitInstance.service.login(LoginRequest(email, password))
+
                 isLoading = false
+                isLoginSuccessful = true
+
+            } catch (e: Exception) {
+                isLoading = false
+                errorMessage = "Error in server connection ${e.message}"
             }
         }
     }

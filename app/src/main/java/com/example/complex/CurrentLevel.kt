@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+package com.example.complex.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

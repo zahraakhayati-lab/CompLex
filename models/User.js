@@ -55,7 +55,10 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Word'
     }],
-    level: { type: Number, default: 1 },
+    level: {
+        type: Number,
+        default: 1
+    },
     streak: {
         type: Number,
         default: 0
@@ -67,10 +70,14 @@ const userSchema = new mongoose.Schema({
     loginDays: [{
         type: Number
     }],
-    xp: { type: Number, default: 0 },
-    lives: { type: Number, default: 5 },
-    
-    // فیلدهای بازیابی رمز عبور
+    xp: {
+        type: Number,
+        default: 0
+    },
+    lives: {
+        type: Number,
+        default: 5
+    },
     resetPasswordCode: {
         type: String,
         default: null
@@ -79,7 +86,6 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null
     }
-
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

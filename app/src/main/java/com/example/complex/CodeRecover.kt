@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+package com.example.complex.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -83,7 +83,6 @@ fun VerifyCodeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- Code field (فقط عدد، حداکثر codeLength رقم) ---
             OutlinedTextField(
                 value = code,
                 onValueChange = { input ->

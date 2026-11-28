@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+package com.example.complex.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -28,17 +28,12 @@ private val BrandBlue = Color(0xFF0099FF)
 private val CardBorder = Color(0xFFCFE6F5)
 
 const val AVATAR_COUNT = 6
-
-// رنگ جایگزین هر آواتار تا وقتی عکس‌ها اضافه نشده‌اند
+// هنوز آواتارا رو اضافه نکردم
 private val PlaceholderColors = listOf(
     Color(0xFFB08AC0), Color(0xFFA37FB5), Color(0xFFB794C4),
     Color(0xFF9F7BB0), Color(0xFFAA86BA), Color(0xFFBE9CCB)
 )
 
-/**
- * آواتار گرد. اگر برای این index عکسی در avatarResIds باشد همان را نشان می‌دهد،
- * در غیر این صورت یک دایره‌ی بنفش با آیکن آدم.
- */
 @Composable
 fun AvatarCircle(
     index: Int,

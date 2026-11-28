@@ -29,12 +29,9 @@ import com.example.complex.ui.theme.CompLexBlue
 
 @Composable
 fun ChangePasswordScreen(
+    currentPassword: String,
     onBackClick: () -> Unit = {},
-    onSaveClick: (String, String) -> Unit = { _, _ -> },
-    isLoading: Boolean = false,
-    errorMessage: String? = null,
-    changeSuccess: Boolean = false,
-    onSuccessAcknowledged: () -> Unit = {}
+    onSaveClick: (String) -> Unit = {}
 ) {
     var currentPass by remember { mutableStateOf("") }
     var newPass by remember { mutableStateOf("") }
@@ -45,15 +42,9 @@ fun ChangePasswordScreen(
     var confirmVisible by remember { mutableStateOf(false) }
 
     // استیت‌های مربوط به پنجره‌ها
-    var localErrorMessage by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
     var showErrorDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(errorMessage) {
-        if (!errorMessage.isNullOrBlank()) {
-            localErrorMessage = errorMessage
-            showErrorDialog = true
-        }
-    }
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
     // پنجره خطا
     if (showErrorDialog) {
@@ -71,7 +62,7 @@ fun ChangePasswordScreen(
                 }
             },
             title = {
-                Text(text = localErrorMessage, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                Text(text = errorMessage, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark)
             },
             confirmButton = {
                 Button(
@@ -86,22 +77,24 @@ fun ChangePasswordScreen(
         )
     }
 
-    // پیام موفقیت فقط پس از پاسخ موفق سرور نمایش داده می‌شود
-    if (changeSuccess) {
+    // پنجره موفقیت (Successful)
+    if (showSuccessDialog) {
         AlertDialog(
-            onDismissRequest = onSuccessAcknowledged,
+            onDismissRequest = {
+                showSuccessDialog = false
+            },
             icon = {
                 Box(
                     modifier = Modifier
                         .size(56.dp)
                         .background(Color.Transparent, CircleShape)
-                        .border(2.dp, Color(0xFF4CAF50), CircleShape),
+                        .border(2.dp, Color(0xFF4CAF50), CircleShape), // رنگ سبز
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Success",
-                        tint = Color(0xFF4CAF50),
+                        tint = Color(0xFF4CAF50), // رنگ سبز
                         modifier = Modifier.size(32.dp)
                     )
                 }
@@ -109,12 +102,12 @@ fun ChangePasswordScreen(
             title = {
                 Text(text = "Successful", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark)
             },
-            text = {
-                Text(text = "Your password has been changed successfully.")
-            },
             confirmButton = {
                 Button(
-                    onClick = onSuccessAcknowledged,
+                    onClick = {
+                        showSuccessDialog = false
+                        onSaveClick(newPass) // <-- بعد از زدن Ok، رمز ذخیره میشه و برمیگرده داشبورد
+                    },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = CompLexBlue)
@@ -238,14 +231,18 @@ fun ChangePasswordScreen(
         Button(
             onClick = {
                 // چک کردن شرایط
-                if (newPass.length < 6) {
-                    localErrorMessage = "Password must be at least 6 characters"
+                if (currentPass != currentPassword) {
+                    errorMessage = "Current password is incorrect"
+                    showErrorDialog = true
+                } else if (newPass.length < 6) {
+                    errorMessage = "Password must be at least 6 characters"
                     showErrorDialog = true
                 } else if (newPass != confirmPass) {
-                    localErrorMessage = "Passwords do not match"
+                    errorMessage = "Passwords do not match"
                     showErrorDialog = true
                 } else {
-                    onSaveClick(currentPass, newPass)
+                    // همه چی درسته، پنجره موفقیت باز میشه
+                    showSuccessDialog = true
                 }
             },
             modifier = Modifier
@@ -256,17 +253,9 @@ fun ChangePasswordScreen(
                 disabledContainerColor = CompLexBlue.copy(alpha = 0.5f)
             ),
             shape = RoundedCornerShape(16.dp),
-            enabled = !isLoading && currentPass.isNotBlank() && newPass.isNotBlank() && confirmPass.isNotBlank()
+            enabled = currentPass.isNotBlank() && newPass.isNotBlank() && confirmPass.isNotBlank()
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    color = Color.White,
-                    strokeWidth = 2.dp
-                )
-            } else {
-                Text(text = "Apply changes", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            }
+            Text(text = "Apply changes", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
     }
 }
@@ -274,5 +263,5 @@ fun ChangePasswordScreen(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun ChangePasswordScreenPreview() {
-    ChangePasswordScreen()
+    ChangePasswordScreen(currentPassword = "12345678")
 }

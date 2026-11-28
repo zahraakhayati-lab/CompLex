@@ -30,17 +30,17 @@ const sampleWords = [
 const seedDatabase = async () => {
     try {
         await mongoose.connect(MONGO_URI);
-        console.log('✅ به دیتابیس وصل شدیم.');
+        console.log('✅ We are connected to the database');
 
         await Word.deleteMany(); 
-        console.log('🗑️ لغات قبلی پاک شدند.');
+        console.log('🗑️Previous Words are removed');
 
         await Word.insertMany(sampleWords);
-        console.log('🌱 لغات جدید با موفقیت اضافه شدند!');
+        console.log('🌱 New Words Added');
 
         process.exit();
     } catch (error) {
-        console.error('❌ خطا در اضافه کردن دیتا:', error.message);
+        console.error('❌ Error in adding data', error.message);
         process.exit(1);
     }
 };

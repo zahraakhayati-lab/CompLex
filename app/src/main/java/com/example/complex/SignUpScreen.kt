@@ -1,4 +1,5 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+
+package com.example.complex.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 private val BrandBlue = Color(0xFF0099FF)
 private val TitleColor = Color(0xFF111111)
@@ -33,12 +35,11 @@ private val BorderColor = Color(0xFF4A6075)
 
 @Composable
 fun SignUpScreen(
-    isLoading: Boolean = false,
-    errorMessage: String? = null,
     onBack: () -> Unit,
-    onCreateAccount: (email: String, password: String) -> Unit,
+    onCreateAccount: (email: String, userId: String) -> Unit,
     onNavigateToLogin: () -> Unit,
-    onTermsClick: () -> Unit = {}
+    onTermsClick: () -> Unit = {},
+    signUpViewModel: SignUpViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -48,15 +49,35 @@ fun SignUpScreen(
     var agreed by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
+    LaunchedEffect(signUpViewModel.isRegisterSuccessful) {
+        if (signUpViewModel.isRegisterSuccessful) {
+            val registeredEmail = signUpViewModel.registeredEmail
+            val registeredId = signUpViewModel.registeredUserId
+
+            signUpViewModel.resetRegisterState()
+
+            if (registeredId.isNotBlank()) {
+                onCreateAccount(registeredEmail, registeredId)
+            }
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.White
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // --- Back arrow ---
-            IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.size(40.dp),
+                enabled = !signUpViewModel.isLoading
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
@@ -66,14 +87,15 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Title ---
             Text(
                 text = "Create your account",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = TitleColor
             )
+
             Spacer(modifier = Modifier.height(6.dp))
+
             Text(
                 text = "Start learning Computer Engineering English.",
                 fontSize = 14.sp,
@@ -83,86 +105,147 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // --- Email ---
-            PillTextField(
+            SignUpPillTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    localError = null
+                },
                 placeholder = "Email",
-                leadingIcon = { Icon(Icons.Outlined.Email, null, tint = SubtitleColor) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Email,
+                        contentDescription = null,
+                        tint = SubtitleColor
+                    )
+                },
                 keyboardType = KeyboardType.Email,
-                enabled = !isLoading
+                enabled = !signUpViewModel.isLoading
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Password ---
-            PillTextField(
+            SignUpPillTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = {
+                    password = it
+                    localError = null
+                },
                 placeholder = "Password",
-                leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = SubtitleColor) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Lock,
+                        contentDescription = null,
+                        tint = SubtitleColor
+                    )
+                },
                 trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    IconButton(
+                        onClick = { passwordVisible = !passwordVisible }
+                    ) {
                         Icon(
-                            imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                            imageVector = if (passwordVisible) {
+                                Icons.Outlined.VisibilityOff
+                            } else {
+                                Icons.Outlined.Visibility
+                            },
                             contentDescription = "Toggle password visibility",
                             tint = SubtitleColor
                         )
                     }
                 },
                 keyboardType = KeyboardType.Password,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                enabled = !isLoading
+                visualTransformation = if (passwordVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                enabled = !signUpViewModel.isLoading
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Confirm Password ---
-            PillTextField(
+            SignUpPillTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                onValueChange = {
+                    confirmPassword = it
+                    localError = null
+                },
                 placeholder = "Confirm Password",
-                leadingIcon = { Icon(Icons.Outlined.Lock, null, tint = SubtitleColor) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Outlined.Lock,
+                        contentDescription = null,
+                        tint = SubtitleColor
+                    )
+                },
                 trailingIcon = {
-                    IconButton(onClick = { confirmVisible = !confirmVisible }) {
+                    IconButton(
+                        onClick = { confirmVisible = !confirmVisible }
+                    ) {
                         Icon(
-                            imageVector = if (confirmVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                            imageVector = if (confirmVisible) {
+                                Icons.Outlined.VisibilityOff
+                            } else {
+                                Icons.Outlined.Visibility
+                            },
                             contentDescription = "Toggle password visibility",
                             tint = SubtitleColor
                         )
                     }
                 },
                 keyboardType = KeyboardType.Password,
-                visualTransformation = if (confirmVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                enabled = !isLoading
+                visualTransformation = if (confirmVisible) {
+                    VisualTransformation.None
+                } else {
+                    PasswordVisualTransformation()
+                },
+                enabled = !signUpViewModel.isLoading
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Terms checkbox ---
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
                     checked = agreed,
                     onCheckedChange = { agreed = it },
-                    colors = CheckboxDefaults.colors(checkedColor = BrandBlue),
-                    enabled = !isLoading
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = BrandBlue
+                    ),
+                    enabled = !signUpViewModel.isLoading
                 )
+
                 Text(
                     text = buildAnnotatedString {
-                        withStyle(SpanStyle(color = SubtitleColor)) { append("I agree to the ") }
-                        withStyle(SpanStyle(color = BrandBlue, fontWeight = FontWeight.Medium)) {
+                        withStyle(
+                            SpanStyle(color = SubtitleColor)
+                        ) {
+                            append("I agree to the ")
+                        }
+
+                        withStyle(
+                            SpanStyle(
+                                color = BrandBlue,
+                                fontWeight = FontWeight.Medium
+                            )
+                        ) {
                             append("Terms & Privacy Policy")
                         }
                     },
                     fontSize = 12.sp,
-                    modifier = Modifier.clickable(onClick = onTermsClick)
+                    modifier = Modifier.clickable(
+                        enabled = !signUpViewModel.isLoading,
+                        onClick = onTermsClick
+                    )
                 )
             }
 
-            // --- Error ---
-            val shownError = localError ?: errorMessage
+            val shownError =
+                localError ?: signUpViewModel.errorMessage
+
             if (shownError != null) {
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = shownError,
                     color = MaterialTheme.colorScheme.error,
@@ -173,19 +256,40 @@ fun SignUpScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // --- Create account button ---
             Button(
                 onClick = {
                     localError = when {
-                        email.isBlank() || password.isBlank() || confirmPassword.isBlank() ->
-                            "Please fill in all fields"
-                        password != confirmPassword -> "Passwords do not match"
-                        !agreed -> "You must accept the Terms & Privacy Policy"
+                        email.isBlank() ->
+                            "Please enter your email."
+
+                        !android.util.Patterns.EMAIL_ADDRESS
+                            .matcher(email.trim())
+                            .matches() ->
+                            "Please enter a valid email address."
+
+                        password.length < 6 ->
+                            "Password must contain at least 6 characters."
+
+                        confirmPassword.isBlank() ->
+                            "Please confirm your password."
+
+                        password != confirmPassword ->
+                            "Passwords do not match."
+
+                        !agreed ->
+                            "Please accept the Terms & Privacy Policy."
+
                         else -> null
                     }
-                    if (localError == null) onCreateAccount(email.trim(), password)
+
+                    if (localError == null) {
+                        signUpViewModel.registerUser(
+                            email = email.trim(),
+                            password = password
+                        )
+                    }
                 },
-                enabled = !isLoading && agreed,
+                enabled = !signUpViewModel.isLoading && agreed,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
@@ -196,32 +300,43 @@ fun SignUpScreen(
                     disabledContentColor = Color.White
                 )
             ) {
-                if (isLoading) {
+                if (signUpViewModel.isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
                         color = Color.White,
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Create account", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        text = "Create account",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // --- Login link ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Already have an account? ", fontSize = 12.sp, color = SubtitleColor)
+                Text(
+                    text = "Already have an account? ",
+                    fontSize = 12.sp,
+                    color = SubtitleColor
+                )
+
                 Text(
                     text = "Login",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = BrandBlue,
-                    modifier = Modifier.clickable(onClick = onNavigateToLogin)
+                    modifier = Modifier.clickable(
+                        enabled = !signUpViewModel.isLoading,
+                        onClick = onNavigateToLogin
+                    )
                 )
             }
         }
@@ -229,7 +344,7 @@ fun SignUpScreen(
 }
 
 @Composable
-private fun PillTextField(
+private fun SignUpPillTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
@@ -243,12 +358,20 @@ private fun PillTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, fontSize = 12.sp, color = SubtitleColor) },
+        placeholder = {
+            Text(
+                text = placeholder,
+                fontSize = 12.sp,
+                color = SubtitleColor
+            )
+        },
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
         singleLine = true,
         enabled = enabled,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = KeyboardOptions(
+            keyboardType = keyboardType
+        ),
         visualTransformation = visualTransformation,
         shape = RoundedCornerShape(50),
         colors = OutlinedTextFieldDefaults.colors(

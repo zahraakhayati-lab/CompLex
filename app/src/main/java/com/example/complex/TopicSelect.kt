@@ -1,4 +1,4 @@
-package com.example.complex.ui // پکیج خود را جایگزین کنید
+package com.example.complex.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -64,7 +64,6 @@ fun TopicInterestScreen(
     currentStep: Int = 3,
     totalSteps: Int = 3
 ) {
-    // نام انتخاب‌شده‌ها ذخیره می‌شود تا با چرخش صفحه از بین نرود
     var selectedNames by rememberSaveable { mutableStateOf(setOf<String>()) }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
