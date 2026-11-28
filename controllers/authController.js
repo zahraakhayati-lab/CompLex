@@ -2,186 +2,458 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = 'super_secret_key_123';
+const JWT_SECRET = process.env.JWT_SECRET || 'complex_dev_secret_change_before_production';
 
-// ۱. ثبت‌نام
+const createToken = (user) => {
+    return jwt.sign(
+        { userId: user._id.toString() },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+    );
+};
+
+const getPublicUser = (user) => ({
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    streak: user.streak,
+    loginDays: user.loginDays,
+    xp: user.xp,
+    lives: user.lives,
+    level: user.level,
+    englishLevel: user.englishLevel,
+    userType: user.userType,
+    interests: user.interests,
+    completedSteps: user.completedSteps,
+    avatar: user.avatar
+});
+
+// ثبت‌نام
 exports.register = async (req, res) => {
     try {
-        console.log("دیتای دریافتی از Postman:", req.body);
-        const { name, email, password } = req.body;
+        let { name, email, password } = req.body;
 
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ message: 'این ایمیل قبلاً ثبت شده است' });
+        name = typeof name === 'string' ? name.trim() : '';
+        email = typeof email === 'string' ? email.trim().toLowerCase() : '';
+
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                message: 'نام، ایمیل و رمز عبور الزامی هستند'
+            });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        if (password.length < 6) {
+            return res.status(400).json({
+                message: 'رمز عبور باید حداقل ۶ کاراکتر باشد'
+            });
+        }
 
-        const newUser = new User({
+        const existingUser = await User.findOne({ email });
+
+        if (existingUser) {
+            return res.status(409).json({
+                message: 'این ایمیل قبلاً ثبت شده است'
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await User.create({
             name,
             email,
             password: hashedPassword
         });
 
-        await newUser.save();
-        res.status(201).json({ message: 'کاربر با موفقیت ثبت‌نام شد' });
+        const token = createToken(newUser);
+
+        return res.status(201).json({
+            message: 'کاربر با موفقیت ثبت‌نام شد',
+            token,
+            user: getPublicUser(newUser)
+        });
+
     } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+        if (err.code === 11000) {
+            return res.status(409).json({
+                message: 'این ایمیل قبلاً ثبت شده است'
+            });
+        }
+
+        console.error('Register error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در ثبت‌نام',
+            error: err.message
+        });
     }
 };
 
-// ۲. ورود
+// ورود
 exports.login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const email = typeof req.body.email === 'string'
+            ? req.body.email.trim().toLowerCase()
+            : '';
+
+        const { password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                message: 'ایمیل و رمز عبور الزامی هستند'
+            });
+        }
+
         const user = await User.findOne({ email });
 
         if (!user) {
-            return res.status(400).json({ message: 'ایمیل یا رمز عبور اشتباه است' });
+            return res.status(401).json({
+                message: 'ایمیل یا رمز عبور اشتباه است'
+            });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
+
         if (!isMatch) {
-            return res.status(400).json({ message: 'ایمیل یا رمز عبور اشتباه است' });
+            return res.status(401).json({
+                message: 'ایمیل یا رمز عبور اشتباه است'
+            });
         }
 
-        // ====== محاسبه استریک (اصلاح شده) ======
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // صفر کردن ساعت برای مقایسه دقیق روزها
+        // محاسبه استریک با مقایسه روزهای UTC
+        const now = new Date();
+        const today = new Date(Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            now.getUTCDate()
+        ));
 
         let currentStreak = user.streak || 0;
 
-        // اصلاح شد: استفاده از Date به جای DataTransfer
-        let lastLogin = user.lastLoginDate ? new Date(user.lastLoginDate) : null;
+        if (user.lastLoginDate) {
+            const previous = new Date(user.lastLoginDate);
 
-        if (lastLogin) {
-            lastLogin.setHours(0, 0, 0, 0); // صفر کردن ساعت تاریخ قبلی
+            const previousDay = new Date(Date.UTC(
+                previous.getUTCFullYear(),
+                previous.getUTCMonth(),
+                previous.getUTCDate()
+            ));
 
-            // محاسبه اختلاف روزها
-            const diffTime = Math.abs(today - lastLogin);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = Math.floor(
+                (today.getTime() - previousDay.getTime()) /
+                (24 * 60 * 60 * 1000)
+            );
 
             if (diffDays === 1) {
-                currentStreak += 1; // اگر دیروز لاگین کرده بود، استریک زیاد میشود
+                currentStreak += 1;
             } else if (diffDays > 1) {
-                currentStreak = 1; // اگر بیشتر از یک روز نیامده بود، استریک ریست میشود
+                currentStreak = 1;
             }
+            // اگر همان روز دوباره وارد شود، استریک تغییر نمی‌کند.
         } else {
-            currentStreak = 1; // اولین بار
+            currentStreak = 1;
         }
 
-        // ثبت روزهای هفته
-        const dayOfWeek = today.getDay();
-        let updatedLoginDays = user.loginDays || [];
+        const dayOfWeek = today.getUTCDay();
+        const updatedLoginDays = user.loginDays || [];
+
         if (!updatedLoginDays.includes(dayOfWeek)) {
             updatedLoginDays.push(dayOfWeek);
         }
 
-        // ذخیره تغییرات در دیتابیس
         user.streak = currentStreak;
-        user.lastLoginDate = today; // اصلاح شد
+        user.lastLoginDate = today;
         user.loginDays = updatedLoginDays;
+
         await user.save();
-        // =======================================
 
-        const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+        const token = createToken(user);
 
-        res.status(200).json({
+        return res.status(200).json({
             message: 'ورود موفقیت‌آمیز بود',
             token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                streak: user.streak,
-                loginDays: user.loginDays, // اصلاح شد (حرف و اضافه پاک شد)
-                xp: user.xp,
-                lives: user.lives
-            }
+            user: getPublicUser(user)
         });
+
     } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+        console.error('Login error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در ورود',
+            error: err.message
+        });
     }
 };
 
-// ۳. آپدیت پروفایل (آنبوردینگ)
+// دریافت اطلاعات کاربر با شناسه
+exports.getMe = async (req, res) => {
+    try {
+        const userId = req.user?.userId || req.params.userId;
+
+        if (!userId) {
+            return res.status(400).json({
+                message: 'شناسه کاربر ارسال نشده است'
+            });
+        }
+
+        const user = await User.findById(userId).select('-password');
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'کاربر پیدا نشد'
+            });
+        }
+
+        return res.status(200).json({
+            user: getPublicUser(user)
+        });
+
+    } catch (err) {
+        console.error('Get user error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در دریافت اطلاعات کاربر'
+        });
+    }
+};
+
+// تکمیل اطلاعات پروفایل و آنبوردینگ
 exports.updateProfile = async (req, res) => {
     try {
         const { userId, name, englishLevel, userType, interests } = req.body;
 
-        const updatedUser = await User.findByIdAndUpdate(
-            userId,
-            { name, englishLevel, userType, interests },
-            { new: true }
+        const id = req.user?.userId || userId;
+
+        if (!id) {
+            return res.status(400).json({
+                message: 'شناسه کاربر الزامی است'
+            });
+        }
+
+        const updates = {};
+
+        if (typeof name === 'string' && name.trim()) {
+            updates.name = name.trim();
+        }
+
+        if (['Beginner', 'Intermediate', 'Advanced'].includes(englishLevel)) {
+            updates.englishLevel = englishLevel;
+        }
+
+        const allowedUserTypes = [
+            'High School Student',
+            'University Student',
+            'Graduate Student',
+            'Software Developer',
+            'Researcher',
+            'Working Professional',
+            'Other'
+        ];
+
+        if (allowedUserTypes.includes(userType)) {
+            updates.userType = userType;
+        }
+
+        if (Array.isArray(interests)) {
+            updates.interests = interests;
+        }
+
+        const user = await User.findByIdAndUpdate(
+            id,
+            { $set: updates },
+            { new: true, runValidators: true }
         );
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: 'کاربر پیدا نشد' });
+        if (!user) {
+            return res.status(404).json({
+                message: 'کاربر پیدا نشد'
+            });
         }
 
-        // اصلاح شد: updatedUser
-        res.status(200).json({ message: 'پروفایل با موفقیت آپدیت شد', user: updatedUser });
+        return res.status(200).json({
+            message: 'پروفایل با موفقیت به‌روزرسانی شد',
+            user: getPublicUser(user)
+        });
+
     } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+        console.error('Update profile error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در به‌روزرسانی پروفایل',
+            error: err.message
+        });
     }
 };
 
-// ۴. آپدیت XP و Lives
+// به‌روزرسانی XP و قلب‌ها
 exports.updateStats = async (req, res) => {
     try {
-        const { userId, xpToAdd, livesToRemove } = req.body;
+        const { userId } = req.body;
+        const id = req.user?.userId || userId;
 
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'کاربر پیدا نشد' });
+        const xpToAdd = Number(req.body.xpToAdd || 0);
+        const livesToRemove = Number(req.body.livesToRemove || 0);
 
-        if (xpToAdd) user.xp += xpToAdd;
-        if (livesToRemove) {
-            user.lives = Math.max(0, user.lives - livesToRemove);
+        if (!id || !Number.isFinite(xpToAdd) ||
+            !Number.isFinite(livesToRemove) ||
+            xpToAdd < 0 || livesToRemove < 0) {
+            return res.status(400).json({
+                message: 'اطلاعات ارسالی معتبر نیست'
+            });
         }
 
+        const user = await User.findById(id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'کاربر پیدا نشد'
+            });
+        }
+
+        user.xp += xpToAdd;
+        user.level = Math.max(1, Math.floor(user.xp / 100) + 1);
+        user.lives = Math.max(0, user.lives - livesToRemove);
+
         await user.save();
-        res.status(200).json({ xp: user.xp, lives: user.lives });
+
+        return res.status(200).json({
+            message: 'امتیاز و قلب‌ها به‌روزرسانی شدند',
+            user: getPublicUser(user)
+        });
+
     } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+        console.error('Update stats error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در به‌روزرسانی امتیازها'
+        });
     }
 };
-// ۵. تغییر نام کاربر (صفحه What's your name)
+
+// تغییر نام
 exports.updateName = async (req, res) => {
     try {
         const { userId, name } = req.body;
+        const id = req.user?.userId || userId;
+
+        if (!id || typeof name !== 'string' || !name.trim()) {
+            return res.status(400).json({
+                message: 'نام معتبر وارد کنید'
+            });
+        }
+
         const user = await User.findByIdAndUpdate(
-            userId,
-            { name: name },
-            { new: true }
+            id,
+            { $set: { name: name.trim() } },
+            { new: true, runValidators: true }
         );
-        if (!user) return res.status(404).json({ message: 'کاربر پیدا نشد' });
-        res.status(200).json({ message: 'نام با موفقیت تغییر کرد', name: user.name });
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'کاربر پیدا نشد'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'نام با موفقیت تغییر کرد',
+            user: getPublicUser(user)
+        });
+
     } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+        console.error('Update name error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در تغییر نام'
+        });
     }
 };
 
-// ۶. تغییر رمز عبور (صفحه Change Password)
+// تغییر آواتار
+exports.updateAvatar = async (req, res) => {
+    try {
+        const { userId, avatar } = req.body;
+        const id = req.user?.userId || userId;
+
+        if (!id || typeof avatar !== 'string') {
+            return res.status(400).json({
+                message: 'اطلاعات آواتار معتبر نیست'
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            id,
+            { $set: { avatar } },
+            { new: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'کاربر پیدا نشد'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'آواتار با موفقیت تغییر کرد',
+            user: getPublicUser(user)
+        });
+
+    } catch (err) {
+        console.error('Update avatar error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در تغییر آواتار'
+        });
+    }
+};
+
+// تغییر رمز عبور
 exports.changePassword = async (req, res) => {
     try {
         const { userId, currentPassword, newPassword } = req.body;
-        const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'کاربر پیدا نشد' });
+        const id = req.user?.userId || userId;
 
-        // چک کردن رمز فعلی
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'رمز عبور فعلی اشتباه است' });
+        if (!id || !currentPassword || !newPassword) {
+            return res.status(400).json({
+                message: 'تمام فیلدها الزامی هستند'
+            });
         }
 
-        // هش کردن رمز جدید و ذخیره
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(newPassword, salt);
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                message: 'رمز عبور جدید باید حداقل ۶ کاراکتر باشد'
+            });
+        }
+
+        const user = await User.findById(id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'کاربر پیدا نشد'
+            });
+        }
+
+        const isMatch = await bcrypt.compare(
+            currentPassword,
+            user.password
+        );
+
+        if (!isMatch) {
+            return res.status(400).json({
+                message: 'رمز عبور فعلی اشتباه است'
+            });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
 
-        res.status(200).json({ message: 'رمز عبور با موفقیت تغییر کرد' });
+        return res.status(200).json({
+            message: 'رمز عبور با موفقیت تغییر کرد'
+        });
+
     } catch (err) {
-        res.status(500).json({ message: 'خطا در سرور', error: err.message });
+        console.error('Change password error:', err);
+
+        return res.status(500).json({
+            message: 'خطا در تغییر رمز عبور'
+        });
     }
 };
