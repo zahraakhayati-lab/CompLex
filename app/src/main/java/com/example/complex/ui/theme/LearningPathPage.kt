@@ -51,21 +51,22 @@ private data class LearningStep(
 
 @Composable
 fun LearningPathScreen(
-    onTabSelected: (DashboardTab) -> Unit = {}
+    onTabSelected: (DashboardTab) -> Unit = {},
+    onDashboardClick: () -> Unit = {}
 ) {
     val steps = listOf(
         LearningStep(
             "Reading",
             "Completed.",
             "+ 30 XP",
-            StepStatus.COMPLETED,
+            StepStatus.CURRENT,
             StepIcon.BOOK
         ),
         LearningStep(
             "Word Practice",
             "Completed.",
             "+ 30 XP",
-            StepStatus.COMPLETED,
+            StepStatus.LOCKED,
             StepIcon.CHECK
         ),
         LearningStep(
@@ -79,7 +80,7 @@ fun LearningPathScreen(
             "Quiz",
             "Locked.",
             "+ 50 XP",
-            StepStatus.CURRENT,
+            StepStatus.LOCKED,
             StepIcon.STAR
         )
     )
@@ -99,7 +100,8 @@ fun LearningPathScreen(
 
             DashboardHeader(
                 hearts = 5,
-                points = 1240
+                points = 1240,
+                onMenuClick = onDashboardClick
             )
 
             Spacer(Modifier.height(34.dp))
@@ -133,7 +135,7 @@ fun LearningPathScreen(
                 Spacer(Modifier.height(5.dp))
 
                 Text(
-                    text = "Step 3",
+                    text = "Step 1",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.White
@@ -150,7 +152,7 @@ fun LearningPathScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth(0.75f)
+                            .fillMaxWidth(0.25f)
                             .fillMaxHeight()
                             .clip(CircleShape)
                             .background(Color.White)
