@@ -3,24 +3,35 @@ const mongoose = require('mongoose');
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'وارد کردن نام الزامی است']
+        required: [true, 'وارد کردن نام الزامی است'],
+        trim: true
     },
+
+    speakingStarted: {
+        type: Boolean,
+        default: false
+    },
+
     email: {
         type: String,
         required: [true, 'وارد کردن ایمیل الزامی است'],
         unique: true,
-        lowercase: true
+        lowercase: true,
+        trim: true
     },
+
     password: {
         type: String,
         required: [true, 'وارد کردن رمز عبور الزامی است'],
         minlength: 6
     },
+
     englishLevel: {
         type: String,
         enum: ['Beginner', 'Intermediate', 'Advanced'],
         default: 'Beginner'
     },
+
     userType: {
         type: String,
         enum: [
@@ -34,6 +45,7 @@ const userSchema = new mongoose.Schema({
         ],
         default: 'University Student'
     },
+
     interests: [{
         type: String,
         enum: [
@@ -51,41 +63,75 @@ const userSchema = new mongoose.Schema({
             'Computer Architecture'
         ]
     }],
+
     savedWords: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Word'
     }],
+
+    // سطح فعلی کاربر
     level: {
         type: Number,
-        default: 1
+        default: 1,
+        min: 1
     },
+
+    // امتیاز تجربه
+    xp: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+
+    // تعداد قلب‌ها
+    lives: {
+        type: Number,
+        default: 5,
+        min: 0,
+        max: 5
+    },
+
+    // روزهای متوالی فعالیت
     streak: {
         type: Number,
-        default: 0
+        default: 0,
+        min: 0
     },
+
     lastLoginDate: {
         type: Date,
         default: null
     },
+
     loginDays: [{
-        type: Number
+        type: Number,
+        min: 0,
+        max: 6
     }],
-    xp: {
-        type: Number,
-        default: 0
+
+    // شناسه درس‌هایی که کاربر کامل کرده است
+    completedSteps: [{
+        type: String
+    }],
+
+    // آواتار انتخاب‌شده
+    avatar: {
+        type: String,
+        default: ''
     },
-    lives: {
-        type: Number,
-        default: 5
-    },
+
     resetPasswordCode: {
         type: String,
         default: null
     },
+
     resetPasswordExpires: {
         type: Date,
         default: null
     }
-}, { timestamps: true });
+
+}, {
+    timestamps: true
+});
 
 module.exports = mongoose.model('User', userSchema);
