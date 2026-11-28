@@ -180,6 +180,7 @@ class MainActivity : ComponentActivity() {
                     )
 
                     Screen.Learning -> LearningPathScreen(
+                        onDashboardClick = { screen = Screen.Home },
                         onTabSelected = { tab ->
                             if (tab == DashboardTab.HOME) {
                                 screen = Screen.Home
